@@ -15,3 +15,9 @@ secrets/
 .idea/
 .DS_Store
 Thumbs.db
+*.test
+coverage.out
+coverage.html
+services/*/bin/
+dist/
+node_modules/

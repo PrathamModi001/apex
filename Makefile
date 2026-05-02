@@ -4,7 +4,7 @@ infra-up:
 	docker-compose up -d postgres redis redpanda neo4j minio redpanda-init minio-init
 
 infra-down:
-	docker-compose stop postgres redis redpanda neo4j minio
+	docker-compose stop postgres redis redpanda neo4j minio redpanda-init minio-init
 
 up:
 	docker-compose up -d
