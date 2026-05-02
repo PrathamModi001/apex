@@ -44,7 +44,7 @@ services:
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-apex}
       POSTGRES_USER: ${POSTGRES_USER:-apex}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-apex_secret}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     ports:
       - "5432:5432"
     volumes:
@@ -71,7 +71,7 @@ services:
     image: neo4j:5
     container_name: apex-neo4j
     environment:
-      NEO4J_AUTH: ${NEO4J_AUTH:-neo4j/apex_neo4j_secret}
+      NEO4J_AUTH: ${NEO4J_AUTH}
     ports:
       - "7474:7474"
       - "7687:7687"
@@ -86,10 +86,11 @@ services:
   minio:
     image: minio/minio:latest
     container_name: apex-minio
+    env_file: .env
     command: server /data --console-address ":9001"
     environment:
       MINIO_ROOT_USER: ${MINIO_ROOT_USER:-apex_minio}
-      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-apex_minio_secret}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
     ports:
       - "9000:9000"
       - "9001:9001"
