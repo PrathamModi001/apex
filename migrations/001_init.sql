@@ -12,7 +12,7 @@ CREATE TABLE users (
 CREATE TABLE vendors (
     id               UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     name             TEXT NOT NULL,
-    bank_accounts    JSONB DEFAULT '[]',
+    bank_accounts    JSONB NOT NULL DEFAULT '[]',
     risk_score       NUMERIC(5,2) DEFAULT 0,
     correction_count INTEGER DEFAULT 0,
     created_at       TIMESTAMPTZ DEFAULT now(),
