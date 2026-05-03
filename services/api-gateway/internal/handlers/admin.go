@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/labstack/echo/v4"
@@ -60,5 +61,29 @@ func UpdateUserRoleHandler(userRepo app.UserRepository) echo.HandlerFunc {
 		}
 
 		return c.JSON(http.StatusOK, map[string]string{"status": "updated"})
+	}
+}
+
+// VerifyChainHandler handles POST /invoices/:id/verify-chain.
+// Checks that each audit entry's prev_hash links to the previous entry's chain_hash.
+func VerifyChainHandler(auditRepo app.AuditRepository) echo.HandlerFunc {
+	return func(c echo.Context) error {
+		id := c.Param("id")
+		entries, err := auditRepo.GetChain(c.Request().Context(), id)
+		if err != nil {
+			return c.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		}
+		if len(entries) == 0 {
+			return c.JSON(http.StatusOK, map[string]any{"intact": true, "message": "no events"})
+		}
+		for i := 1; i < len(entries); i++ {
+			if entries[i].PrevHash != entries[i-1].ChainHash {
+				return c.JSON(http.StatusOK, map[string]any{
+					"intact":  false,
+					"message": fmt.Sprintf("chain break at event %d", i+1),
+				})
+			}
+		}
+		return c.JSON(http.StatusOK, map[string]any{"intact": true})
 	}
 }

@@ -103,13 +103,25 @@ func main() {
 
 	// Audit chain — any authenticated role
 	e.GET("/audit/:id", handlers.GetAuditChainHandler(auditRepo), anyRole)
+	e.POST("/invoices/:id/verify-chain", handlers.VerifyChainHandler(auditRepo), anyRole)
 
 	// User listing — any authenticated role
 	e.GET("/users", handlers.ListUsersHandler(userRepo), anyRole)
 
+	// Vendor routes — any authenticated role
+	e.GET("/vendors", handlers.ListVendorsHandler(pool), anyRole)
+	e.GET("/vendors/:id", handlers.GetVendorHandler(pool), anyRole)
+
 	// Admin routes — admin only
 	adminOnly := apimw.RequireRole(domain.RoleAdmin)
 	e.POST("/admin/users/:id/role", handlers.UpdateUserRoleHandler(userRepo), adminOnly)
+
+	// Policy routes — reads: any role; writes: reviewer+; delete: admin
+	e.GET("/policies", handlers.ListPoliciesHandler(pool), anyRole)
+	agentServiceURL := getEnv("AGENT_SERVICE_URL", "http://agent-service:8000")
+	e.POST("/policies", handlers.CreatePolicyHandler(agentServiceURL), reviewerOrAdmin)
+	e.PATCH("/policies/:id", handlers.TogglePolicyHandler(pool), reviewerOrAdmin)
+	e.DELETE("/policies/:id", handlers.DeletePolicyHandler(pool), adminOnly)
 
 	port := getEnv("PORT", "8080")
 	log.Fatal(e.Start(":" + port))
