@@ -1,8 +1,8 @@
 'use client'
 
 import { useState } from 'react'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import { ShieldCheck, ShieldAlert, ChevronDown, ChevronRight, X } from 'lucide-react'
 
 interface AuditEvent {
   id: string
@@ -41,19 +41,30 @@ function sortedJson(obj: unknown): string {
   return `{${sorted.join(',')}}`
 }
 
-export function AuditTimeline({ events }: AuditTimelineProps) {
-  const [expanded, setExpanded] = useState<Set<string>>(new Set())
-  const [verifyResult, setVerifyResult] = useState<VerifyResult | null>(null)
-  const [verifying, setVerifying] = useState(false)
+function eventDotColor(type: string): string {
+  if (type.startsWith('AGENT_STEP')) return 'var(--apex-blue)'
+  const map: Record<string, string> = {
+    INGESTED:  'var(--apex-blue)',
+    PROCESSED: 'var(--apex-amber)',
+    DECISION:  'var(--apex-green)',
+    FLAGGED:   'var(--apex-orange)',
+    REJECTED:  'var(--apex-red)',
+  }
+  return map[type] ?? '#3A3E50'
+}
 
-  const toggle = (id: string) => {
+export function AuditTimeline({ events }: AuditTimelineProps) {
+  const [expanded, setExpanded]       = useState<Set<string>>(new Set())
+  const [verifyResult, setVerifyResult] = useState<VerifyResult | null>(null)
+  const [verifying, setVerifying]     = useState(false)
+
+  const toggle = (id: string) =>
     setExpanded((prev) => {
       const next = new Set(prev)
       if (next.has(id)) next.delete(id)
       else next.add(id)
       return next
     })
-  }
 
   const verifyIntegrity = async () => {
     setVerifying(true)
@@ -75,86 +86,108 @@ export function AuditTimeline({ events }: AuditTimelineProps) {
     }
   }
 
-  const statusColor: Record<string, string> = {
-    INGESTED: 'bg-blue-500',
-    PROCESSED: 'bg-purple-500',
-    DECISION: 'bg-green-500',
-    FLAGGED: 'bg-yellow-500',
-    REJECTED: 'bg-red-500',
-  }
-
-  const getColor = (type: string) => {
-    if (type.startsWith('AGENT_STEP')) return 'bg-cyan-500'
-    return statusColor[type] || 'bg-zinc-500'
-  }
-
   return (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between">
-        <CardTitle className="text-sm">Audit Trail</CardTitle>
-        <div className="flex items-center gap-2">
+    <div className="rounded-sm border border-border bg-card overflow-hidden">
+      {/* Header */}
+      <div className="flex items-center justify-between px-5 pt-4 pb-3 border-b border-border/60">
+        <p className="text-[9px] font-mono tracking-[0.2em] uppercase text-muted-foreground">
+          Audit Trail
+        </p>
+        <div className="flex items-center gap-3">
           {verifyResult && (
             <span
-              className={`text-xs font-medium ${
-                verifyResult.intact ? 'text-green-400' : 'text-red-400'
-              }`}
+              className="flex items-center gap-1.5 text-[10px] font-mono"
+              style={{ color: verifyResult.intact ? 'var(--apex-green)' : 'var(--apex-red)' }}
             >
               {verifyResult.intact
-                ? `Chain intact (${verifyResult.steps} steps)`
+                ? <ShieldCheck className="h-3 w-3" strokeWidth={2} />
+                : <ShieldAlert className="h-3 w-3" strokeWidth={2} />}
+              {verifyResult.intact
+                ? `Intact · ${verifyResult.steps} steps`
                 : `Tampered at step ${verifyResult.tamperedAt}`}
             </span>
           )}
-          <Button size="sm" variant="outline" onClick={verifyIntegrity} disabled={verifying}>
-            {verifying ? 'Verifying…' : 'Verify Integrity'}
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={verifyIntegrity}
+            disabled={verifying || events.length === 0}
+            className="h-6 text-[10px] font-mono"
+          >
+            {verifying ? 'Verifying…' : 'Verify Chain'}
           </Button>
         </div>
-      </CardHeader>
-      <CardContent>
-        {events.length === 0 ? (
-          <p className="text-xs text-muted-foreground">No audit events found.</p>
-        ) : (
-          <>
-            {/* Horizontal timeline dots */}
-            <div className="relative flex items-center gap-0 mb-6 overflow-x-auto pb-2">
-              <div className="absolute top-3 left-0 right-0 h-0.5 bg-border" />
-              {events.map((ev, i) => (
+      </div>
+
+      {events.length === 0 ? (
+        <div className="px-5 py-10 text-center">
+          <p className="text-[11px] font-mono text-muted-foreground/40">No audit events found.</p>
+        </div>
+      ) : (
+        <div>
+          {/* Horizontal step scrubber */}
+          <div className="relative flex items-start gap-0 overflow-x-auto px-5 py-4 border-b border-border/60">
+            <div
+              className="absolute top-[28px] left-0 right-0 h-px"
+              style={{ background: 'var(--border)' }}
+            />
+            {events.map((ev, i) => {
+              const color = eventDotColor(ev.event_type)
+              const isExp = expanded.has(ev.id)
+              return (
                 <button
                   key={ev.id}
-                  className="relative z-10 flex flex-col items-center gap-1 min-w-[72px] cursor-pointer group"
+                  className="relative flex flex-col items-center gap-1.5 min-w-[72px] cursor-pointer group transition-opacity"
                   onClick={() => toggle(ev.id)}
+                  style={{ opacity: isExp ? 1 : 0.7 }}
                 >
                   <span
-                    className={`h-3 w-3 rounded-full border-2 border-background ${getColor(ev.event_type)} group-hover:scale-125 transition-transform`}
+                    className="relative h-[10px] w-[10px] rounded-full transition-transform group-hover:scale-125"
+                    style={{
+                      background: color,
+                      boxShadow: isExp ? `0 0 8px ${color}` : 'none',
+                      outline: isExp ? `2px solid ${color}40` : 'none',
+                      outlineOffset: '2px',
+                    }}
                   />
-                  <span className="text-[9px] text-muted-foreground text-center leading-tight px-1">
-                    {ev.event_type.replace('_', ' ')}
+                  <span className="text-[8px] font-mono text-muted-foreground text-center leading-tight px-1 max-w-[68px]">
+                    {ev.event_type.replace(/_/g, ' ')}
                   </span>
-                  <span className="text-[9px] text-muted-foreground/60">#{i + 1}</span>
+                  <span className="text-[8px] font-mono text-muted-foreground/40">#{i + 1}</span>
                 </button>
-              ))}
-            </div>
+              )
+            })}
+          </div>
 
-            {/* Expanded detail cards */}
-            <div className="space-y-2">
+          {/* Detail cards for expanded events */}
+          {events.some((ev) => expanded.has(ev.id)) && (
+            <div className="divide-y divide-border/50">
               {events.map((ev, i) =>
                 expanded.has(ev.id) ? (
-                  <div
-                    key={ev.id}
-                    className="rounded-lg border border-border bg-muted/30 p-3 text-xs space-y-1.5"
-                  >
+                  <div key={ev.id} className="px-5 py-4 space-y-3">
+                    {/* Row header */}
                     <div className="flex items-center justify-between">
-                      <span className="font-semibold">
-                        #{i + 1} {ev.event_type}
-                      </span>
+                      <div className="flex items-center gap-2">
+                        <span
+                          className="inline-block w-1.5 h-4 rounded-full"
+                          style={{ background: eventDotColor(ev.event_type) }}
+                        />
+                        <span className="text-xs font-mono font-semibold text-foreground">
+                          #{i + 1} {ev.event_type}
+                        </span>
+                      </div>
                       <button
-                        className="text-muted-foreground hover:text-foreground"
+                        className="text-muted-foreground/50 hover:text-foreground transition-colors"
                         onClick={() => toggle(ev.id)}
                       >
-                        ✕
+                        <X className="h-3.5 w-3.5" />
                       </button>
                     </div>
-                    <div className="flex gap-4 text-muted-foreground">
-                      <span>Actor: <span className="text-foreground">{ev.actor}</span></span>
+
+                    <div className="flex gap-6 text-[10px] font-mono text-muted-foreground">
+                      <span>
+                        Actor: <span className="text-foreground">{ev.actor || '—'}</span>
+                      </span>
                       <span>
                         Time:{' '}
                         <span className="text-foreground">
@@ -162,24 +195,30 @@ export function AuditTimeline({ events }: AuditTimelineProps) {
                         </span>
                       </span>
                     </div>
-                    <details className="mt-1">
-                      <summary className="cursor-pointer text-muted-foreground hover:text-foreground">
+
+                    <details className="group/det">
+                      <summary className="cursor-pointer text-[10px] font-mono text-muted-foreground hover:text-foreground flex items-center gap-1 list-none">
+                        <ChevronRight className="h-3 w-3 group-open/det:rotate-90 transition-transform" />
                         Payload
                       </summary>
-                      <pre className="mt-1 bg-muted p-2 rounded overflow-auto text-[10px] max-h-40">
+                      <pre
+                        className="mt-1.5 text-[10px] font-mono p-3 rounded-sm overflow-auto max-h-48 text-foreground/70"
+                        style={{ background: 'var(--background)', border: '1px solid var(--border)' }}
+                      >
                         {JSON.stringify(ev.payload, null, 2)}
                       </pre>
                     </details>
-                    <div className="font-mono text-[9px] text-muted-foreground/60 truncate">
+
+                    <p className="text-[9px] font-mono text-muted-foreground/40 truncate">
                       hash: {ev.chain_hash}
-                    </div>
+                    </p>
                   </div>
                 ) : null
               )}
             </div>
-          </>
-        )}
-      </CardContent>
-    </Card>
+          )}
+        </div>
+      )}
+    </div>
   )
 }

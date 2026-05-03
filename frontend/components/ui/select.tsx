@@ -6,7 +6,11 @@ function Select({ className, children, ...props }: React.ComponentProps<'select'
     <select
       data-slot="select"
       className={cn(
-        'flex h-8 w-full rounded-lg border border-input bg-background px-2 py-1 text-sm text-foreground outline-none transition-colors focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50',
+        'flex h-8 w-full rounded-sm border border-input bg-[var(--input)] px-2 py-1',
+        'text-xs font-mono text-foreground',
+        'outline-none transition-colors appearance-none cursor-pointer',
+        'focus-visible:border-[var(--apex-amber)]/60 focus-visible:ring-1 focus-visible:ring-[var(--apex-amber)]/20',
+        'disabled:cursor-not-allowed disabled:opacity-40',
         className
       )}
       {...props}

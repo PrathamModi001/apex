@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Network } from 'lucide-react'
 
 interface GraphNode {
   id: string
@@ -21,7 +21,6 @@ interface FraudGraphProps {
   invoiceId: string
 }
 
-// Dynamic import wrapper for @xyflow/react to handle SSR and availability
 export function FraudGraph({ invoiceId }: FraudGraphProps) {
   const [graphData, setGraphData] = useState<{ nodes: GraphNode[]; edges: GraphEdge[] } | null>(null)
   const [FlowComponent, setFlowComponent] = useState<React.ComponentType<{
@@ -33,16 +32,13 @@ export function FraudGraph({ invoiceId }: FraudGraphProps) {
   const [flowAvailable, setFlowAvailable] = useState<boolean | null>(null)
 
   useEffect(() => {
-    // Dynamically import to handle potential unavailability
     import('@xyflow/react')
       .then((mod) => {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         setFlowComponent(mod.ReactFlow as any)
         setFlowAvailable(true)
       })
-      .catch(() => {
-        setFlowAvailable(false)
-      })
+      .catch(() => setFlowAvailable(false))
   }, [])
 
   const fetchGraph = useCallback(async () => {
@@ -56,22 +52,21 @@ export function FraudGraph({ invoiceId }: FraudGraphProps) {
     }
   }, [invoiceId])
 
-  useEffect(() => {
-    fetchGraph()
-  }, [fetchGraph])
+  useEffect(() => { fetchGraph() }, [fetchGraph])
 
   const mapNodes = (nodes: GraphNode[]) =>
-    nodes.map((n) => ({
+    nodes.map((n, i) => ({
       id: n.id,
       data: { label: n.label },
-      position: { x: Math.random() * 400, y: Math.random() * 300 },
+      position: { x: (i % 3) * 160 + 40, y: Math.floor(i / 3) * 100 + 40 },
       style: {
-        background: n.type === 'vendor' ? '#06b6d4' : '#f97316',
-        color: '#fff',
-        borderRadius: 8,
-        padding: '8px 12px',
-        fontSize: 11,
-        border: 'none',
+        background: n.type === 'vendor' ? '#1A1C2A' : '#0F1218',
+        color: n.type === 'vendor' ? '#E8A820' : '#4888F8',
+        border: `1.5px solid ${n.type === 'vendor' ? '#C88A0A40' : '#4888F840'}`,
+        borderRadius: 2,
+        padding: '6px 10px',
+        fontSize: 10,
+        fontFamily: 'var(--font-jetbrains, monospace)',
       },
     }))
 
@@ -81,49 +76,64 @@ export function FraudGraph({ invoiceId }: FraudGraphProps) {
       source: e.source,
       target: e.target,
       label: e.label,
-      style: { stroke: '#6b7280' },
+      style: { stroke: '#1A1E2C', strokeWidth: 1.5 },
+      labelStyle: { fontSize: 9, fontFamily: 'var(--font-jetbrains, monospace)', fill: '#65708A' },
     }))
 
   if (!graphData) {
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-sm">Fraud Network Graph</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="animate-pulse bg-muted h-48 rounded-md" />
-        </CardContent>
-      </Card>
+      <div className="rounded-sm border border-border bg-card overflow-hidden">
+        <div className="px-5 pt-4 pb-3 border-b border-border/60">
+          <p className="text-[9px] font-mono tracking-[0.2em] uppercase text-muted-foreground">
+            Fraud Network Graph
+          </p>
+        </div>
+        <div className="h-48 animate-pulse bg-muted/40 m-4 rounded-sm" />
+      </div>
     )
   }
 
   if (graphData.nodes.length === 0) {
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-sm">Fraud Network Graph</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-xs text-muted-foreground">No graph data available.</p>
-        </CardContent>
-      </Card>
+      <div className="rounded-sm border border-border bg-card overflow-hidden">
+        <div className="px-5 pt-4 pb-3 border-b border-border/60">
+          <p className="text-[9px] font-mono tracking-[0.2em] uppercase text-muted-foreground">
+            Fraud Network Graph
+          </p>
+        </div>
+        <div className="px-5 py-8 text-center">
+          <Network className="h-6 w-6 text-muted-foreground/20 mx-auto mb-2" strokeWidth={1} />
+          <p className="text-[11px] font-mono text-muted-foreground/50">No graph connections found.</p>
+        </div>
+      </div>
     )
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-sm flex items-center gap-3">
+    <div className="rounded-sm border border-border bg-card overflow-hidden">
+      {/* Header */}
+      <div className="flex items-center justify-between px-5 pt-4 pb-3 border-b border-border/60">
+        <p className="text-[9px] font-mono tracking-[0.2em] uppercase text-muted-foreground">
           Fraud Network Graph
-          <span className="flex items-center gap-2 text-xs font-normal text-muted-foreground">
-            <span className="inline-block h-2 w-2 rounded-full bg-cyan-500" /> Vendor
-            <span className="inline-block h-2 w-2 rounded-full bg-orange-500" /> Bank Account
+        </p>
+        <div className="flex items-center gap-3 text-[9px] font-mono text-muted-foreground/60">
+          <span className="flex items-center gap-1">
+            <span className="inline-block w-2 h-2 rounded-[2px]" style={{ background: 'var(--apex-amber)', opacity: 0.7 }} />
+            Vendor
           </span>
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
+          <span className="flex items-center gap-1">
+            <span className="inline-block w-2 h-2 rounded-[2px]" style={{ background: 'var(--apex-blue)', opacity: 0.7 }} />
+            Account
+          </span>
+        </div>
+      </div>
+
+      <div className="p-4">
         {flowAvailable && FlowComponent ? (
-          <div className="h-64 w-full rounded-lg overflow-hidden border border-border">
+          <div
+            className="h-64 w-full rounded-sm overflow-hidden"
+            style={{ border: '1px solid var(--border)' }}
+          >
             <FlowComponent
               nodes={mapNodes(graphData.nodes)}
               edges={mapEdges(graphData.edges)}
@@ -132,34 +142,43 @@ export function FraudGraph({ invoiceId }: FraudGraphProps) {
             />
           </div>
         ) : (
-          // Fallback: simple node list
-          <div className="space-y-2">
-            <p className="text-xs text-muted-foreground mb-2">
-              {flowAvailable === false ? 'Graph renderer unavailable — showing node list.' : 'Loading…'}
-            </p>
+          <div className="space-y-3">
+            {flowAvailable === null && (
+              <p className="text-[10px] font-mono text-muted-foreground/50">Loading renderer…</p>
+            )}
+            {flowAvailable === false && (
+              <p className="text-[10px] font-mono text-muted-foreground/50">
+                Graph renderer unavailable — showing node list.
+              </p>
+            )}
             <div className="flex flex-wrap gap-2">
               {graphData.nodes.map((n) => (
                 <span
                   key={n.id}
-                  className={`rounded px-2 py-1 text-xs font-medium text-white ${
-                    n.type === 'vendor' ? 'bg-cyan-600' : 'bg-orange-600'
-                  }`}
+                  className="rounded-[3px] px-2 py-1 text-[10px] font-mono font-medium"
+                  style={{
+                    background: n.type === 'vendor' ? 'var(--apex-amber-glow)' : 'rgba(72,136,248,0.1)',
+                    color: n.type === 'vendor' ? 'var(--apex-amber-bright)' : 'var(--apex-blue)',
+                    border: `1px solid ${n.type === 'vendor' ? 'var(--apex-amber-line)' : 'rgba(72,136,248,0.25)'}`,
+                  }}
                 >
                   {n.label}
                 </span>
               ))}
             </div>
-            <div className="mt-2 space-y-1">
-              {graphData.edges.map((e) => (
-                <p key={e.id} className="text-[10px] text-muted-foreground">
-                  {e.source} → {e.target}
-                  {e.label ? ` (${e.label})` : ''}
-                </p>
-              ))}
-            </div>
+            {graphData.edges.length > 0 && (
+              <div className="space-y-1 mt-2">
+                {graphData.edges.map((e) => (
+                  <p key={e.id} className="text-[9px] font-mono text-muted-foreground/50">
+                    {e.source} {'->'} {e.target}
+                    {e.label ? ` (${e.label})` : ''}
+                  </p>
+                ))}
+              </div>
+            )}
           </div>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   )
 }

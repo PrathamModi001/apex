@@ -1,21 +1,31 @@
 import type { Metadata } from 'next'
-import { Geist, Geist_Mono } from 'next/font/google'
+import { Syne, DM_Sans, JetBrains_Mono } from 'next/font/google'
 import './globals.css'
 import { QueryProvider } from '@/components/query-provider'
 import { NavSidebar } from '@/components/nav-sidebar'
 
-const geistSans = Geist({
-  variable: '--font-geist-sans',
+const syne = Syne({
+  variable: '--font-syne',
   subsets: ['latin'],
+  weight: ['400', '600', '700', '800'],
+  display: 'swap',
 })
 
-const geistMono = Geist_Mono({
-  variable: '--font-geist-mono',
+const dmSans = DM_Sans({
+  variable: '--font-dm-sans',
   subsets: ['latin'],
+  display: 'swap',
+})
+
+const jetbrainsMono = JetBrains_Mono({
+  variable: '--font-jetbrains',
+  subsets: ['latin'],
+  weight: ['400', '500', '600'],
+  display: 'swap',
 })
 
 export const metadata: Metadata = {
-  title: 'APEX — Accounts Payable Agent',
+  title: 'APEX — AP Intelligence',
   description: 'Autonomous accounts-payable processing agent',
 }
 
@@ -27,7 +37,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased dark`}
+      className={`${syne.variable} ${dmSans.variable} ${jetbrainsMono.variable} h-full antialiased dark`}
     >
       <body className="min-h-full flex bg-background text-foreground">
         <QueryProvider>
